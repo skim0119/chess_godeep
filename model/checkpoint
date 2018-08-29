@@ -1,0 +1,2 @@
+model_checkpoint_path: "chess.ckpt-45000"
+all_model_checkpoint_paths: "chess.ckpt-45000"
