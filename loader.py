@@ -11,8 +11,11 @@ import numpy as np
 'k' : 6, 'K' : 6
 """
 
-def board_expand(board):
-    board_exp = np.zeros((8,8,6))
+def board_one_hot(board):
+    """
+    This method takes 8x8 size chess board, and expand it into 8x8x6 one-hot configuration.
+    """
+    board_one_hot = np.zeros((8,8,6))
     piece2num = {
             'p' : 0, 'P' : 0,
             'r' : 1, 'R' : 1,
@@ -25,45 +28,55 @@ def board_expand(board):
         for j in range(8):
             if board[i][j] != '.':
                 height = piece2num[board[i][j]]
-                isWhite = board[i][j] <= 'Z'
+                isWhite = board[i][j] <= 'Z' # capital letter indicates white
                 if isWhite: board[i][j] = 1
                 else: board[i][j] = -1
-                board_exp[i][j][height] = isWhite
-    return board_exp
+                board_one_hot[i][j][height] = isWhite
+    return board_one_hot
 
 def load():
+    """
+    Try to interprete the textfiles, and generate datasets
+    """
     x_data = []
     y_data = []
 
     # load black win
     for board in read_board("predictor/black_wins.txt"):
-        x_data.append(board_expand(board))
+        x_data.append(board_one_hot(board))
         y_data.append([0,1])
 
     # load white win
     for board in read_board("predictor/white_wins.txt"):
-        x_data.append(board_expand(board))
+        x_data.append(board_one_hot(board))
         y_data.append([1,0])
 
     print(len(x_data), "data loaded")
-    return x_data, y_data
+    return np.stack(x_data), np.stack(y_data)
 
 def read_board(path):
+    """
+    This method iterate the chess board from .txt file
+    First 8 movements will be skipped. (It is hard to tell who is likely to win at the beginning)
+    """
     f = open(path, "r")
-    i = 0;
+    row = 0
+    movement = 0
     board = []
     for line in f:
         if line[0] == "=":
             # game ended
-            i = 0
+            row, movement = 0, 0
             board=[]
             continue
-        if i < 8:
+        if row < 8:
             board.append(line.strip().split())
-            i += 1
-        elif i == 8:
-            yield board
-            i = 0
+            row += 1
+        elif row == 8:
+            if movement > 4:
+                yield board
+            movement += 1
+            row = 0
             board = []
     raise StopIteration
 
